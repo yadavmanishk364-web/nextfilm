@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>NextFilm</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: sticky nav, featured hero with dots, genre chips, horizontal poster rows, detail + player modals, credit footer. */
+:root{
+  --bg:#090a0f; --surface:#14161f; --surface-2:#1e2132; --line:#2b3046;
+  --fg:#eef0f6; --muted:#9aa0b6; --accent:#e5384f; --accent-hi:#ff5a6e; --on-accent:#ffffff;
+  --font-display:'Bebas Neue','Impact','Arial Narrow',sans-serif;
+  --font-body:'DM Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--font-body);-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent-hi);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;padding-left:var(--gl);padding-right:var(--gr)}
+svg{display:block}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:64px}
+.logo{font-family:var(--font-display);font-size:32px;letter-spacing:.05em;line-height:1;text-decoration:none;color:var(--fg)}
+.logo b{color:var(--accent);font-weight:400}
+.links{display:flex;gap:6px}
+.links button{background:none;border:0;padding:8px 12px;border-radius:6px;color:var(--muted);font-weight:500}
+.links button:hover{color:var(--fg)}
+.links button[aria-current="page"]{color:var(--fg);background:var(--surface)}
+.search{margin-left:auto;position:relative;display:flex;align-items:center;min-width:0}
+.search svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.search input{width:min(260px,40vw);height:40px;padding:0 14px 0 40px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;min-width:0}
+.search input::placeholder{color:var(--muted)}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.hero-art{position:absolute;inset:0}
+.hero-art svg{width:100%;height:100%}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 8%,rgba(9,10,15,.55) 55%,rgba(9,10,15,.1) 100%),linear-gradient(0deg,var(--bg) 0%,rgba(9,10,15,0) 40%)}
+.hero .wrap{position:relative;z-index:1;padding-top:clamp(72px,12vw,150px);padding-bottom:40px}
+.hero-body{max-width:560px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-hi);font-weight:700}
+.hero h1{font-family:var(--font-display);font-weight:400;font-size:clamp(52px,9vw,104px);line-height:.95;letter-spacing:.02em;margin:10px 0 14px;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;color:var(--muted);font-size:13px}
+.rate{border:1px solid var(--muted);padding:0 6px;border-radius:3px;font-size:12px;color:var(--fg)}
+.hero p{margin:14px 0 22px;color:#cfd3e2;max-width:52ch}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:6px;border:0;font-weight:700}
+.btn-main{background:var(--accent);color:var(--on-accent)}
+.btn-main:hover{background:var(--accent-hi)}
+.btn-ghost{background:rgba(255,255,255,.12);color:var(--fg);border:1px solid rgba(255,255,255,.18)}
+.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.dots{display:flex;gap:8px;margin-top:28px}
+.dots button{width:28px;height:4px;border-radius:2px;border:0;padding:0;background:rgba(255,255,255,.28)}
+.dots button[aria-current="true"]{background:var(--accent-hi)}
+
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:22px 0 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 16px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:500;font-size:14px}
+.chip:hover{color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+
+/* rows */
+.row{padding-top:22px}
+.row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.row-head h2{font-family:var(--font-display);font-weight:400;font-size:26px;letter-spacing:.04em;margin:0}
+.arrows{display:none;gap:6px}
+@media (hover:hover){.arrows{display:flex}}
+.arrows button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.arrows button:hover{background:var(--surface-2)}
+.track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px 0 14px;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.track>.card{flex:none;width:clamp(128px,17vw,184px);scroll-snap-align:start}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(128px,40vw,180px),1fr));gap:16px 12px;padding:10px 0 20px}
+.grid-title{font-family:var(--font-display);font-weight:400;font-size:30px;letter-spacing:.04em;margin:26px 0 0}
+.empty{padding:48px 0;color:var(--muted);max-width:46ch}
+.empty strong{display:block;color:var(--fg);font-size:18px;margin-bottom:6px}
+
+/* card */
+.card{position:relative;min-width:0}
+.poster{display:block;width:100%;aspect-ratio:2/3;padding:0;border:0;border-radius:6px;overflow:hidden;background:var(--surface);transition:transform .2s ease,box-shadow .2s ease}
+.poster svg{width:100%;height:100%}
+.pw{position:relative;display:block;width:100%;height:100%}
+.pw img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card:hover .poster,.poster:focus-visible{transform:scale(1.04);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.card-ui{position:absolute;left:0;right:0;bottom:0;padding:34px 10px 10px;background:linear-gradient(0deg,rgba(9,10,15,.95),rgba(9,10,15,0));border-radius:0 0 6px 6px;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.card:hover .card-ui,.card:focus-within .card-ui{opacity:1}
+.card-ui .t{font-weight:700;font-size:13px;line-height:1.25;margin-bottom:2px}
+.card-ui .m{font-size:11px;color:var(--muted);margin-bottom:8px}
+.card-actions{display:flex;gap:6px;pointer-events:auto}
+.ico{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(20,22,31,.85);display:grid;place-items:center;padding:0}
+.ico:hover{border-color:#fff}
+.ico.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ico.go{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+@media (hover:none){.card-ui{display:none}}
+.card .cap{display:none;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.3}
+@media (hover:none){.card .cap{display:block}}
+
+/* modals */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(4,5,8,.82);overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) var(--gr) max(16px,env(safe-area-inset-bottom,0px)) var(--gl)}
+.sheet{position:relative;max-width:880px;margin:2vh auto;background:var(--surface);border-radius:10px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.x{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(9,10,15,.8);display:grid;place-items:center}
+.x:hover{background:var(--bg)}
+.d-art{position:relative;aspect-ratio:16/8;max-height:380px;width:100%}
+.d-art svg{width:100%;height:100%}
+.d-art::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--surface) 0%,rgba(20,22,31,0) 60%)}
+.d-title{position:absolute;left:24px;bottom:16px;z-index:2;right:24px}
+.d-title h2{font-family:var(--font-display);font-weight:400;font-size:clamp(40px,7vw,64px);letter-spacing:.03em;line-height:1;margin:0 0 12px}
+.d-body{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px;padding:8px 24px 24px}
+@media (max-width:640px){.d-body{grid-template-columns:minmax(0,1fr)}}
+.d-body p{margin:10px 0 0}
+.facts{font-size:13px;color:var(--muted)}
+.facts div{margin-bottom:8px}
+.facts span{color:var(--fg)}
+.more{padding:0 24px 24px}
+.more h3{font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:.04em;margin:0 0 10px}
+.more .grid{padding:0;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+
+.player-sheet{max-width:1000px}
+.p-head{display:flex;align-items:center;gap:12px;padding:14px 64px 14px 18px;border-bottom:1px solid var(--line)}
+.p-head h2{font-family:var(--font-display);font-weight:400;font-size:26px;letter-spacing:.04em;margin:0}
+.screen{position:relative;aspect-ratio:16/9;background:#000;width:100%}
+.screen video,.screen canvas{position:absolute;inset:0;width:100%;height:100%;background:#000}
+.p-note{padding:14px 18px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+.p-note strong{color:var(--fg)}
+
+/* footer */
+footer{margin-top:40px;border-top:1px solid var(--line);background:var(--surface)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:center;justify-content:space-between;padding-top:28px;padding-bottom:max(28px,env(safe-area-inset-bottom,0px))}
+footer .brand{font-family:var(--font-display);font-size:28px;letter-spacing:.05em}
+footer .brand b{color:var(--accent);font-weight:400}
+footer small{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+.credit{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px}
+.credit .who{font-weight:700}
+.num{font-variant-numeric:tabular-nums;letter-spacing:.04em;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);user-select:all}
+.copy{height:34px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2)}
+.copy:hover{border-color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:80;background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+
+@media (max-width:560px){
+  .links button{padding:8px 8px;font-size:14px}
+  .nav .wrap{gap:10px}
+  .logo{font-size:28px}
+  .search input{width:44vw}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#home" aria-label="NextFilm home">NEXT<b>FILM</b></a>
+    <nav class="links" aria-label="Main">
+      <button type="button" data-view="home" aria-current="page">Home</button>
+      <button type="button" data-view="list">My List</button>
+    </nav>
+    <label class="search">
+      <span id="ico-search"></span>
+      <input id="q" type="search" placeholder="Search titles, cast, genre" autocomplete="off" aria-label="Search films">
+    </label>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="hero" aria-label="Featured film"></section>
+  <div class="wrap">
+    <div class="chips" id="chips" role="group" aria-label="Filter by genre"></div>
+    <div id="main"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="brand">NEXT<b>FILM</b></div>
+      <small>Watch movies anywhere. &copy; 2026 NextFilm.</small>
+    </div>
+    <div class="credit">
+      <span>Developed by <span class="who">Manish Yadav</span></span>
+      <span class="num" id="phone">9155437755</span>
+      <button class="copy" type="button" id="copyPhone">Copy number</button>
+    </div>
+  </div>
+</footer>
+
+<div class="modal" id="detail" hidden role="dialog" aria-modal="true" aria-labelledby="d-h"></div>
+<div class="modal" id="player" hidden role="dialog" aria-modal="true" aria-labelledby="p-h">
+  <div class="sheet player-sheet">
+    <button class="x" type="button" data-close="player" aria-label="Close player"></button>
+    <div class="p-head"><h2 id="p-h"></h2><span class="meta" id="p-meta"></span></div>
+    <div class="screen">
+      <video id="vid" controls playsinline preload="none"></video>
+      <canvas id="demo" width="960" height="540" hidden></canvas>
+    </div>
+    <div class="p-note" id="p-note" hidden></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+  var BASE='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/';
+  /* Each film's `src` is the video file it plays. These are open-licensed sample clips;
+     replace them with video files you have the rights to stream. */
+  var FILMS=[
+    {id:1,title:'Midnight Meridian',year:2025,dur:'2h 08m',rating:'U/A 16+',genres:['Sci-Fi','Mystery'],hue:232,motif:'rings',src:'TearsOfSteel.mp4',cast:['Aarav Menon','Ishita Rao','Daniel Cho'],desc:'A night-shift astronomer in Pune finds a signal that repeats exactly at midnight, and the answer lies somewhere under her own city.'},
+    {id:2,title:'Iron Monsoon',year:2025,dur:'2h 21m',rating:'A',genres:['Action','Crime'],hue:8,motif:'slash',src:'ForBiggerBlazes.mp4',cast:['Vikram Sethi','Naina Kapoor','Rohan Das'],desc:'When floods cut off a border town, a retired army engineer must outrun a smuggling ring across collapsing bridges.'},
+    {id:3,title:'The Last Lantern',year:2024,dur:'1h 54m',rating:'U',genres:['Drama'],hue:38,motif:'sun',src:'Sintel.mp4',cast:['Meera Joshi','Harish Pillai','Kabir Anand'],desc:'In a fading river village, the final lantern maker teaches one stubborn apprentice what the festival really means.'},
+    {id:4,title:'Chai & Chaos',year:2025,dur:'1h 47m',rating:'U/A 7+',genres:['Comedy','Family'],hue:28,motif:'wave',src:'ForBiggerFun.mp4',cast:['Tanvi Shah','Rajat Bhatia','Pooja Nair'],desc:'Three cousins inherit a railway-station tea stall and one very strict grandmother who still runs the till.'},
+    {id:5,title:'Neon Dharma',year:2026,dur:'2h 12m',rating:'U/A 13+',genres:['Sci-Fi','Action'],hue:292,motif:'grid',src:'ElephantsDream.mp4',cast:['Zoya Khan','Arjun Mehra','Leela Iyer'],desc:'In a glowing future Varanasi, a monk-turned-hacker has one night to stop the city from forgetting its past.'},
+    {id:6,title:'Saffron Heist',year:2024,dur:'2h 03m',rating:'U/A 16+',genres:['Crime','Comedy'],hue:18,motif:'slash',src:'ForBiggerEscapes.mp4',cast:['Dev Malhotra','Sana Qureshi','Bhanu Pratap'],desc:'A crew of unlikely professionals plans to rob a spice auction, and every plan goes wrong in a better way.'},
+    {id:7,title:'Paper Kites',year:2023,dur:'1h 39m',rating:'U',genres:['Family','Drama'],hue:196,motif:'wave',src:'BigBuckBunny.mp4',cast:['Aditi Verma','Master Yash','Sunil Rawat'],desc:'A boy in Patna builds one kite for every day his father is away, and the sky slowly fills with letters.'},
+    {id:8,title:'Gravity Wells',year:2026,dur:'2h 17m',rating:'U/A 13+',genres:['Sci-Fi','Adventure'],hue:252,motif:'rings',src:'TearsOfSteel.mp4',cast:['Kiran Bose','Maya Fernandes','Omar Sheikh'],desc:'A salvage crew follows a dead probe into the pull of a collapsing star and finds they are not the first to arrive.'},
+    {id:9,title:'Ghat of Echoes',year:2025,dur:'1h 58m',rating:'A',genres:['Mystery','Drama'],hue:170,motif:'peaks',src:'Sintel.mp4',cast:['Nikhil Rane','Tara Deshmukh','Pandit Rao'],desc:'Every night at the river steps, the same voice calls out a name. A new priest decides to find out whose it is.'},
+    {id:10,title:'Rickshaw Rally',year:2024,dur:'1h 44m',rating:'U',genres:['Comedy','Adventure'],hue:52,motif:'slash',src:'ForBiggerJoyrides.mp4',cast:['Gopal Das','Ritu Singh','Salim Ahmed'],desc:'Forty auto-rickshaws, one cross-country race, and a prize that nobody can quite agree on.'},
+    {id:11,title:'Hollow Crown',year:2025,dur:'2h 31m',rating:'U/A 13+',genres:['Fantasy','Adventure'],hue:276,motif:'peaks',src:'ElephantsDream.mp4',cast:['Ananya Dutta','Lucas Pereira','Veer Chauhan'],desc:'A queen without a kingdom crosses the salt desert to claim a throne that vanishes when anyone sits on it.'},
+    {id:12,title:'Delta Run',year:2026,dur:'1h 52m',rating:'U/A 16+',genres:['Action','Adventure'],hue:150,motif:'wave',src:'ForBiggerEscapes.mp4',cast:['Farhan Ali','Rhea Sinha','Tomas Weber'],desc:'A river pilot races a cyclone through the Sundarbans with a cargo she is not allowed to open.'},
+    {id:13,title:'Monsoon Letters',year:2023,dur:'2h 02m',rating:'U',genres:['Romance','Drama'],hue:330,motif:'sun',src:'BigBuckBunny.mp4',cast:['Sara Thomas','Imran Siddiqui','Kamala Devi'],desc:'Two strangers keep swapping letters through a misdelivered mailbox, season after rainy season.'},
+    {id:14,title:'Static Bloom',year:2024,dur:'1h 49m',rating:'U/A 13+',genres:['Sci-Fi','Drama'],hue:212,motif:'grid',src:'Sintel.mp4',cast:['Noor Fatima','Eli Brandt','Suresh Gowda'],desc:'When a village radio starts broadcasting tomorrow\'s news, one teenager has to decide whether to tell anyone.'},
+    {id:15,title:'Bazaar Noir',year:2025,dur:'2h 06m',rating:'A',genres:['Crime','Mystery'],hue:350,motif:'slash',src:'ForBiggerBlazes.mp4',cast:['Rahul Khanna','Mira Pandey','Anwar Baig'],desc:'A night detective trades favours with every stall in the old market to find who is selling the city its secrets.'},
+    {id:16,title:'Wild Kanha',year:2024,dur:'1h 31m',rating:'U',genres:['Documentary','Family'],hue:128,motif:'peaks',src:'BigBuckBunny.mp4',cast:['Narrated by Anil Kulkarni'],desc:'A full year in the grasslands of Kanha, from first rain to the last tiger cub leaving the den.'},
+    {id:17,title:'Pocket Heroes',year:2026,dur:'1h 36m',rating:'U',genres:['Family','Comedy'],hue:96,motif:'sun',src:'ForBiggerFun.mp4',cast:['Voices of Riya Kapoor','Aman Joshi','Bobby Lal'],desc:'Five tiny toys wake up in a school bag and have until the bell to save the class pet show.'},
+    {id:18,title:'Brass Horizon',year:2023,dur:'2h 24m',rating:'U/A 13+',genres:['Adventure','Action'],hue:44,motif:'sun',src:'ForBiggerJoyrides.mp4',cast:['Captain Ravi Nair','Esha Gill','Jonas Lund'],desc:'An airship crew maps the last blank corner of the world, and it turns out someone has been waiting there.'}
+  ];
+  var GENRES=['All','Action','Adventure','Sci-Fi','Fantasy','Comedy','Family','Drama','Romance','Crime','Mystery','Documentary'];
+  var ROWS=[
+    {name:'Trending Now',ids:[1,2,5,12,6,3,8,13]},
+    {name:'Action & Adventure',any:['Action','Adventure']},
+    {name:'Sci-Fi & Fantasy',any:['Sci-Fi','Fantasy']},
+    {name:'Comedy & Family',any:['Comedy','Family']},
+    {name:'Drama & Romance',any:['Drama','Romance']},
+    {name:'Crime & Mystery',any:['Crime','Mystery']}
+  ];
+  var FEATURED=[1,2,5,11];
+
+  var I={
+    play:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>',
+    check:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    search:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    close:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    left:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    right:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+  };
+
+  var state={genre:'All',q:'',view:'home',hero:0,list:[]};
+  try{var saved=JSON.parse(localStorage.getItem('nextfilm-list')||'[]');if(Array.isArray(saved))state.list=saved.filter(function(n){return typeof n==='number'});}catch(e){}
+  function persist(){try{localStorage.setItem('nextfilm-list',JSON.stringify(state.list))}catch(e){}}
+
+  function $(s,r){return (r||document).querySelector(s)}
+  function byId(id){return FILMS.filter(function(f){return f.id===id})[0]}
+  function inList(id){return state.list.indexOf(id)>-1}
+  function hsl(h,s,l){return 'hsl('+(((h%360)+360)%360)+' '+s+'% '+l+'%)'}
+
+  /* generated artwork: gradient + motif drawn per film */
+  function artBase(f,w,h,withTitle){
+    var gid='g'+f.id+'_'+w, sid='s'+f.id+'_'+w, h1=f.hue, h2=f.hue+55;
+    var cx=w*.68, cy=h*.38, r=Math.min(w,h)*.26, m='', i;
+    if(f.motif==='sun'){
+      m='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+hsl(h2,90,62)+'" opacity=".92"/><circle cx="'+cx+'" cy="'+cy+'" r="'+(r*1.55)+'" fill="none" stroke="'+hsl(h2,90,72)+'" stroke-opacity=".4" stroke-width="'+(w/110)+'"/>';
+    }else if(f.motif==='slash'){
+      for(i=0;i<4;i++){m+='<polygon points="'+w*(.08+i*.22)+','+h+' '+w*(.26+i*.22)+','+h+' '+w*(.56+i*.22)+',0 '+w*(.38+i*.22)+',0" fill="'+hsl(h2,85,36+i*8)+'" opacity=".55"/>';}
+    }else if(f.motif==='rings'){
+      for(i=1;i<=4;i++){m+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*i*.55)+'" fill="none" stroke="'+hsl(h2,90,68)+'" stroke-opacity="'+(0.75-i*.14)+'" stroke-width="'+(w/90)+'"/>';}
+      m+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*.2)+'" fill="'+hsl(h2,95,75)+'"/>';
+    }else if(f.motif==='peaks'){
+      m='<polygon points="0,'+h*.8+' '+w*.25+','+h*.38+' '+w*.45+','+h*.64+' '+w*.68+','+h*.3+' '+w+','+h*.7+' '+w+','+h+' 0,'+h+'" fill="'+hsl(h2,55,24)+'" opacity=".9"/><polygon points="0,'+h*.9+' '+w*.3+','+h*.58+' '+w*.55+','+h*.8+' '+w*.8+','+h*.55+' '+w+','+h*.78+' '+w+','+h+' 0,'+h+'" fill="'+hsl(h1,50,12)+'"/><circle cx="'+w*.74+'" cy="'+h*.2+'" r="'+r*.34+'" fill="'+hsl(h2,90,80)+'" opacity=".9"/>';
+    }else if(f.motif==='grid'){
+      for(i=0;i<9;i++){m+='<line x1="'+(w*i/8)+'" y1="'+h*.45+'" x2="'+(w*.5+(i-4)*w*.45)+'" y2="'+h+'" stroke="'+hsl(h2,95,66)+'" stroke-opacity=".55" stroke-width="'+(w/260+.6)+'"/>';}
+      for(i=0;i<6;i++){var y=h*.45+Math.pow(i/5,1.8)*h*.55;m+='<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="'+hsl(h2,95,66)+'" stroke-opacity=".5" stroke-width="'+(w/260+.6)+'"/>';}
+      m+='<circle cx="'+w*.5+'" cy="'+h*.34+'" r="'+r*.8+'" fill="'+hsl(h2,95,60)+'" opacity=".85"/>';
+    }else{
+      for(i=0;i<5;i++){var yy=h*(.3+i*.1);m+='<path d="M0 '+yy+' Q '+w*.25+' '+(yy-h*.09)+' '+w*.5+' '+yy+' T '+w+' '+yy+'" fill="none" stroke="'+hsl(h2,90,66)+'" stroke-opacity="'+(.8-i*.12)+'" stroke-width="'+(w/70)+'"/>';}
+    }
+    var txt='';
+    if(withTitle){
+      var words=f.title.toUpperCase().split(' '), lines;
+      if(words.length>1){var k=Math.ceil(words.length/2);lines=[words.slice(0,k).join(' '),words.slice(k).join(' ')];}else{lines=[words[0]];}
+      var longest=Math.max.apply(null,lines.map(function(l){return l.length}));
+      var fs=Math.min(w*.2,w*1.5/longest*1.1);
+      lines.forEach(function(l,n){
+        txt+='<text x="'+w*.08+'" y="'+(h-h*.07-(lines.length-1-n)*fs*.95)+'" fill="#fff" style="font-family:var(--font-display);font-size:'+fs+'px;letter-spacing:.02em">'+l+'</text>';
+      });
+    }
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid slice" role="img" aria-label="'+f.title+' artwork" xmlns="http://www.w3.org/2000/svg">'+
+      '<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+hsl(h1,70,22)+'"/><stop offset="1" stop-color="'+hsl(h2,75,12)+'"/></linearGradient>'+
+      '<linearGradient id="'+sid+'" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".78"/></linearGradient></defs>'+
+      '<rect width="'+w+'" height="'+h+'" fill="url(#'+gid+')"/>'+m+
+      (withTitle?'<rect width="'+w+'" height="'+h+'" fill="url(#'+sid+')"/>':'')+txt+'</svg>';
+  }
+
+  /* optional real poster: add poster:'https://your-site/poster.jpg' to a film; generated art stays as the fallback */
+  function art(f,w,h,withTitle){
+    var s=artBase(f,w,h,withTitle);
+    if(!f.poster)return s;
+    return '<span class="pw">'+s+'<img src="'+f.poster+'" alt="'+f.title+' poster" loading="lazy" onerror="this.remove()"></span>';
+  }
+
+  function card(f){
+    var on=inList(f.id);
+    return '<article class="card">'+
+      '<button class="poster" type="button" data-open="'+f.id+'" aria-label="Details for '+f.title+'">'+art(f,200,300,true)+'</button>'+
+      '<div class="card-ui"><div class="t">'+f.title+'</div><div class="m">'+f.year+' &middot; '+f.dur+'</div>'+
+      '<div class="card-actions"><button class="ico go" type="button" data-play="'+f.id+'" aria-label="Play '+f.title+'">'+I.play+'</button>'+
+      '<button class="ico'+(on?' on':'')+'" type="button" data-add="'+f.id+'" aria-label="'+(on?'Remove '+f.title+' from':'Add '+f.title+' to')+' My List">'+(on?I.check:I.plus)+'</button></div></div>'+
+      '<div class="cap">'+f.title+'</div></article>';
+  }
+
+  function matches(f){
+    var q=state.q.trim().toLowerCase();
+    if(state.genre!=='All'&&f.genres.indexOf(state.genre)<0)return false;
+    if(!q)return true;
+    return (f.title+' '+f.genres.join(' ')+' '+f.cast.join(' ')+' '+f.year).toLowerCase().indexOf(q)>-1;
+  }
+
+  function renderChips(){
+    $('#chips').innerHTML=GENRES.map(function(g){return '<button class="chip" type="button" data-genre="'+g+'" aria-pressed="'+(state.genre===g)+'">'+g+'</button>'}).join('');
+  }
+
+  function renderHero(){
+    var f=byId(FEATURED[state.hero]), el=$('#hero');
+    el.hidden=!(state.view==='home'&&!state.q.trim()&&state.genre==='All');
+    if(el.hidden)return;
+    el.innerHTML='<div class="hero-art">'+art(f,1600,800,false)+'</div><div class="wrap"><div class="hero-body">'+
+      '<div class="eyebrow">Featured &middot; '+f.genres[0]+'</div><h1>'+f.title+'</h1>'+
+      '<div class="meta"><span>'+f.year+'</span><span class="rate">'+f.rating+'</span><span>'+f.dur+'</span><span>'+f.genres.join(' / ')+'</span></div>'+
+      '<p>'+f.desc+'</p><div class="btns"><button class="btn btn-main" type="button" data-play="'+f.id+'">'+I.play+' Play</button>'+
+      '<button class="btn btn-ghost" type="button" data-open="'+f.id+'">More info</button></div>'+
+      '<div class="dots" role="group" aria-label="Featured films">'+FEATURED.map(function(id,n){return '<button type="button" data-hero="'+n+'" aria-label="Show '+byId(id).title+'" aria-current="'+(n===state.hero)+'"></button>'}).join('')+'</div></div></div>';
+  }
+
+  function renderMain(){
+    var m=$('#main'), html='', list;
+    if(state.view==='list'){
+      list=state.list.map(byId).filter(Boolean).filter(matches);
+      html='<h2 class="grid-title">My List</h2>';
+      html+=list.length?'<div class="grid">'+list.map(card).join('')+'</div>':
+        '<div class="empty"><strong>'+(state.list.length?'No saved film matches.':'Your list is empty.')+'</strong>'+(state.list.length?'Try a different search or genre.':'Press + on any film to save it here.')+'</div>';
+    }else if(state.q.trim()||state.genre!=='All'){
+      list=FILMS.filter(matches);
+      html='<h2 class="grid-title">'+(state.q.trim()?'Results for &ldquo;'+state.q.trim().replace(/[<>&"]/g,'')+'&rdquo;':state.genre)+'</h2>';
+      html+=list.length?'<div class="grid">'+list.map(card).join('')+'</div>':
+        '<div class="empty"><strong>Nothing found.</strong>Check the spelling or pick another genre.</div>';
+    }else{
+      html=ROWS.map(function(r,n){
+        var items=r.ids?r.ids.map(byId):FILMS.filter(function(f){return f.genres.some(function(g){return r.any.indexOf(g)>-1})});
+        return '<section class="row" aria-label="'+r.name+'"><div class="row-head"><h2>'+r.name+'</h2>'+
+          '<div class="arrows"><button type="button" data-scroll="'+n+':-1" aria-label="Scroll '+r.name+' left">'+I.left+'</button><button type="button" data-scroll="'+n+':1" aria-label="Scroll '+r.name+' right">'+I.right+'</button></div></div>'+
+          '<div class="track" id="track'+n+'">'+items.map(card).join('')+'</div></section>';
+      }).join('');
+    }
+    m.innerHTML=html;
+  }
+
+  function renderNav(){
+    document.querySelectorAll('.links button').forEach(function(b){
+      if(b.dataset.view===state.view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+    });
+  }
+  function render(){renderNav();renderChips();renderHero();renderMain();}
+
+  /* detail modal */
+  function openDetail(id){
+    var f=byId(id), d=$('#detail'), on=inList(id);
+    var more=FILMS.filter(function(x){return x.id!==id&&x.genres.some(function(g){return f.genres.indexOf(g)>-1})}).slice(0,6);
+    d.innerHTML='<div class="sheet"><button class="x" type="button" data-close="detail" aria-label="Close details">'+I.close+'</button>'+
+      '<div class="d-art">'+art(f,1200,600,false)+'<div class="d-title"><h2 id="d-h">'+f.title+'</h2><div class="btns">'+
+      '<button class="btn btn-main" type="button" data-play="'+f.id+'">'+I.play+' Play</button>'+
+      '<button class="btn btn-ghost" type="button" data-add="'+f.id+'" data-detail="1">'+(on?I.check+' In My List':I.plus+' My List')+'</button></div></div></div>'+
+      '<div class="d-body"><div><div class="meta"><span>'+f.year+'</span><span class="rate">'+f.rating+'</span><span>'+f.dur+'</span></div><p>'+f.desc+'</p></div>'+
+      '<div class="facts"><div>Cast: <span>'+f.cast.join(', ')+'</span></div><div>Genres: <span>'+f.genres.join(', ')+'</span></div></div></div>'+
+      (more.length?'<div class="more"><h3>More like this</h3><div class="grid">'+more.map(card).join('')+'</div></div>':'')+'</div>';
+    d.hidden=false;document.body.classList.add('lock');d.scrollTop=0;
+    var cb=$('.x',d);if(cb)cb.focus();
+  }
+  function closeDetail(){$('#detail').hidden=true;syncLock();}
+  function syncLock(){document.body.classList.toggle('lock',!$('#detail').hidden||!$('#player').hidden);}
+
+  /* player */
+  var demoRaf=0, vidTimer=0, fellBack=false;
+  function stopDemo(){cancelAnimationFrame(demoRaf);demoRaf=0;}
+  function startDemo(f){
+    var c=$('#demo'), x=c.getContext('2d'), t0=performance.now(), W=c.width, H=c.height;
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function frame(now){
+      var t=reduce?2:(now-t0)/1000, hue=f.hue+Math.sin(t*.4)*40;
+      var g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,hsl(hue,70,20));g.addColorStop(1,hsl(hue+55,75,10));
+      x.fillStyle=g;x.fillRect(0,0,W,H);
+      x.strokeStyle='rgba(255,255,255,.35)';x.lineWidth=3;
+      for(var i=1;i<=4;i++){x.beginPath();x.arc(W/2,H/2-10,60*i+((t*30)%60),0,Math.PI*2);x.globalAlpha=Math.max(0,.6-i*.12);x.stroke();}
+      x.globalAlpha=1;x.fillStyle='#fff';x.textAlign='center';
+      x.font='88px "Bebas Neue",Impact,sans-serif';x.fillText(f.title.toUpperCase(),W/2,H/2+30);
+      x.font='500 20px "DM Sans",sans-serif';x.fillStyle='rgba(255,255,255,.75)';x.fillText('NEXTFILM  ·  PREVIEW SCREEN',W/2,H/2+70);
+      var p=((t/20)%1);x.fillStyle='rgba(255,255,255,.2)';x.fillRect(40,H-44,W-80,6);x.fillStyle='#e5384f';x.fillRect(40,H-44,(W-80)*p,6);
+      demoRaf=requestAnimationFrame(frame);
+    }
+    demoRaf=requestAnimationFrame(frame);
+  }
+  function fallback(f){
+    if(fellBack)return;fellBack=true;
+    var v=$('#vid');v.hidden=true;try{v.pause()}catch(e){}
+    $('#demo').hidden=false;startDemo(f);
+    var n=$('#p-note');n.hidden=false;
+    n.innerHTML='<strong>The video file could not be loaded here.</strong> Open the NextFilm HTML file on your own hosting with a working video link in each film\'s <code>src</code>, and this screen plays the real video.';
+  }
+  function openPlayer(id){
+    var f=byId(id), p=$('#player'), v=$('#vid');
+    fellBack=false;stopDemo();clearTimeout(vidTimer);
+    $('#p-h').textContent=f.title;$('#p-meta').textContent=f.year+' · '+f.dur;
+    $('#demo').hidden=true;v.hidden=false;$('#p-note').hidden=true;
+    p.hidden=false;document.body.classList.add('lock');p.scrollTop=0;
+    v.onerror=function(){fallback(f)};
+    v.src=BASE+f.src;v.load();
+    var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});
+    vidTimer=setTimeout(function(){if(!fellBack&&v.readyState<2&&v.networkState!==2)fallback(f);},6000);
+    var cb=$('.x',p);if(cb)cb.focus();
+  }
+  function closePlayer(){
+    var v=$('#vid');clearTimeout(vidTimer);stopDemo();
+    try{v.pause()}catch(e){}v.removeAttribute('src');v.load();
+    $('#player').hidden=true;syncLock();
+  }
+
+  function toast(msg){
+    var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);
+    toast.t=setTimeout(function(){t.hidden=true},2000);
+  }
+  function toggleList(id){
+    var f=byId(id), i=state.list.indexOf(id);
+    if(i>-1){state.list.splice(i,1);toast('Removed from My List');}else{state.list.push(id);toast('Added to My List');}
+    persist();renderMain();
+    if(!$('#detail').hidden){var keep=$('#detail').scrollTop;openDetail(id);$('#detail').scrollTop=keep;}
+  }
+
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-open],[data-play],[data-add],[data-close],[data-genre],[data-hero],[data-scroll],[data-view],#copyPhone');
+    if(!t)return;
+    if(t.id==='copyPhone'){
+      var num='9155437755';
+      var done=function(){toast('Number copied')};
+      var sel=function(){var r=document.createRange();r.selectNodeContents($('#phone'));var s=window.getSelection();s.removeAllRanges();s.addRange(r);toast('Number selected, press copy');};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(num).then(done,sel);}else{sel();}
+      return;
+    }
+    if(t.dataset.open){openDetail(+t.dataset.open);}
+    else if(t.dataset.play){openPlayer(+t.dataset.play);}
+    else if(t.dataset.add){toggleList(+t.dataset.add);}
+    else if(t.dataset.close){if(t.dataset.close==='player')closePlayer();else closeDetail();}
+    else if(t.dataset.genre){state.genre=t.dataset.genre;state.view='home';render();}
+    else if(t.dataset.hero){state.hero=+t.dataset.hero;renderHero();}
+    else if(t.dataset.scroll){
+      var p=t.dataset.scroll.split(':'), tr=$('#track'+p[0]);
+      if(tr)tr.scrollBy({left:(+p[1])*tr.clientWidth*.85,behavior:'smooth'});
+    }
+    else if(t.dataset.view){state.view=t.dataset.view;state.genre='All';state.q='';$('#q').value='';render();window.scrollTo({top:0});}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){if(!$('#player').hidden)closePlayer();else if(!$('#detail').hidden)closeDetail();}
+  });
+  ['detail','player'].forEach(function(id){
+    $('#'+id).addEventListener('click',function(e){if(e.target===this){if(id==='player')closePlayer();else closeDetail();}});
+  });
+  $('#q').addEventListener('input',function(){state.q=this.value;if(state.view==='list'&&!state.q.trim()){}render();});
+
+  $('#ico-search').innerHTML=I.search;
+  $('.x',$('#player')).innerHTML=I.close;
+  render();
+})();
+</script>
+
+</body>
+</html>
